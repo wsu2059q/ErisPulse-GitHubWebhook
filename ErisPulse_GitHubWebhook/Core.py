@@ -183,7 +183,7 @@ class Main(BaseModule):
             
             # 生成 UUID 和路径
             uuid_short = generate_uuid_short(4)
-            webhook_path = f"/github-webhook/{target_id}_{uuid_short}"
+            webhook_path = f"/{target_id}_{uuid_short}"
             
             # 检查 UUID 冲突
             for _ in range(3):  # 最多重试3次
@@ -192,7 +192,7 @@ class Main(BaseModule):
                 
                 if uuid_exists:
                     uuid_short = generate_uuid_short(4)
-                    webhook_path = f"/github-webhook/{target_id}_{uuid_short}"
+                    webhook_path = f"/{target_id}_{uuid_short}"
                 else:
                     break
             
@@ -265,7 +265,7 @@ class Main(BaseModule):
                 repo = config.get('repo', 'unknown')
                 events = ', '.join(config.get('events', []))
                 enabled = '启用' if config.get('enabled') else '禁用'
-                webhook_path = f"/GitHubWebhook/github-webhook/{config['target_id']}_{config['uuid']}"
+                webhook_path = f"/GitHubWebhook/{config['target_id']}_{config['uuid']}"
                 
                 msg += f"{i}. {repo}\n"
                 msg += f"   监听事件: {events}\n"
@@ -346,7 +346,7 @@ class Main(BaseModule):
             self.storage.set("github_webhook:configs", configs)
             
             # 注销路由
-            webhook_path = f"/GitHubWebhook/github-webhook/{config_to_remove['target_id']}_{config_to_remove['uuid']}"
+            webhook_path = f"/GitHubWebhook/{config_to_remove['target_id']}_{config_to_remove['uuid']}"
             if webhook_path in self.webhook_routes:
                 del self.webhook_routes[webhook_path]
             
@@ -448,7 +448,7 @@ class Main(BaseModule):
     
     async def _register_route(self, config):
         """注册单个路由"""
-        webhook_path = f"/github-webhook/{config['target_id']}_{config['uuid']}"
+        webhook_path = f"/{config['target_id']}_{config['uuid']}"
         
         # 创建处理器
         async def webhook_handler(request: Request) -> Dict[str, Any]:

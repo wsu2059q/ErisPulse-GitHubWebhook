@@ -15,7 +15,7 @@ GitHub Webhook 聚合器模块，支持将 GitHub 事件转发到聊天平台。
 ## 安装
 
 ```bash
-epsdk install ErisPulse-GitHubWebhook
+epsdk install GitHubWebhook
 ```
 
 ## 配置
