@@ -1,0 +1,32 @@
+# ErisPulse-GitHubWebhook 配置示例
+# 将此配置复制到你的 config.toml 文件中
+
+[GitHubWebhook]
+# 外部可访问的基础地址（必填）
+# 这是你的服务器的外部地址，GitHub 需要能够访问到
+# 示例：
+#   - 本地测试: http://localhost:8080
+#   - 内网穿透: http://your-domain.ngrok.io
+#   - 公网服务器: https://your-domain.com
+#   - 带端口: http://192.168.1.100:8080
+base_url = "http://localhost:8080"
+
+# 历史记录保留时间（天）
+# 设置为 0 表示不自动清理历史记录
+# 默认值: 7 天
+history_ttl = 7
+
+# 去重标记过期时间（秒）
+# 防止同一个事件重复发送通知
+# 默认值: 3600 秒（1小时）
+dedup_ttl = 3600
+
+# 错误通知限流时间（秒）
+# 同一个配置在限流时间内只发送一次错误通知
+# 默认值: 300 秒（5分钟）
+error_ratelimit = 300
+
+# 最大历史记录数
+# 每个仓库最多保留的历史记录数量
+# 默认值: 100 条
+max_history_records = 100

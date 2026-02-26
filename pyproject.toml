@@ -1,0 +1,24 @@
+[project]
+name = "ErisPulse-GitHubWebhook"
+version = "1.0.0"
+description = "GitHub Webhook 聚合器模块，支持将 GitHub 事件转发到聊天平台"
+readme = "README.md"
+requires-python = ">=3.9"
+license = { file = "LICENSE" }
+authors = [
+    { name = "wsu2059", email = "wsu2059@qq.com" }
+]
+dependencies = [
+    "cryptography>=41.0.0",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/wsu2059/ErisPulse-GitHubWebhook"
+"Bug Tracker" = "https://github.com/wsu2059/ErisPulse-GitHubWebhook/issues"
+
+[project.entry-points."erispulse.module"]
+"GitHubWebhook" = "ErisPulse_GitHubWebhook:Main"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
