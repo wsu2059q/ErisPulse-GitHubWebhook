@@ -90,4 +90,11 @@ def get_event_key(repo, event_type, event_data):
         timestamp = event_data.get('repository', {}).get('updated_at', '')
         return f"{repo}:{event_type}:{sender_id}:{timestamp}"
     
+    elif event_type == 'workflow_run':
+        # 使用 run_id 和 action
+        workflow_run = event_data.get('workflow_run', {})
+        run_id = workflow_run.get('id', '')
+        action = event_data.get('action', '')
+        return f"{repo}:workflow_run:{run_id}:{action}"
+    
     return None

@@ -23,6 +23,7 @@ from .handlers import (
     ReleaseHandler,
     StarHandler,
     ForkHandler,
+    WorkflowHandler,
 )
 
 
@@ -44,6 +45,7 @@ class Main(BaseModule):
             'release': ReleaseHandler,
             'star': StarHandler,
             'fork': ForkHandler,
+            'workflow_run': WorkflowHandler,
         }
     
     @staticmethod
@@ -147,7 +149,7 @@ class Main(BaseModule):
                 await event.reply("仓库名称格式错误，应为 username/repo")
                 return
             
-            await event.reply(f"请选择要监听的事件（push,issues,pr,release,star,fork - 多个用逗号分隔）")
+            await event.reply(f"请选择要监听的事件（push,issues,pr,release,star,fork,workflow - 多个用逗号分隔）")
             
             # 等待用户输入事件类型
             events_reply = await event.wait_reply(timeout=60)
@@ -159,15 +161,19 @@ class Main(BaseModule):
             events = [e.strip().lower() for e in events_str.split(',') if e.strip()]
             
             # 验证事件类型
-            valid_events = ['push', 'issues', 'pr', 'release', 'star', 'fork']
+            valid_events = ['push', 'issues', 'pr', 'release', 'star', 'fork', 'workflow']
             invalid_events = [e for e in events if e not in valid_events]
             
             if invalid_events:
                 await event.reply(f"无效的事件类型: {', '.join(invalid_events)}")
                 return
             
-            # 映射 pr 到 pull_request
-            events = ['pull_request' if e == 'pr' else e for e in events]
+            # 映射 pr 到 pull_request, workflow 到 workflow_run
+            events = [
+                'pull_request' if e == 'pr' else
+                'workflow_run' if e == 'workflow' else e
+                for e in events
+            ]
             
             await event.reply("请输入 Webhook Secret（可选，发送空格或 skip 跳过）")
             
@@ -617,7 +623,7 @@ class Main(BaseModule):
             # 清理去重集合中的过期数据
             dedup_key = f"github_webhook:dedup"
             dedup_set = self.storage.get(dedup_key, [])
-            dedup_set = {item for item in dedup_set if current_time - item['timestamp'] <= dedup_ttl}
+            dedup_set = [item for item in dedup_set if current_time - item['timestamp'] <= dedup_ttl]
             self.storage.set(dedup_key, dedup_set)
             
             self.logger.info("过期数据清理完成")

@@ -52,7 +52,7 @@ max_history_records = 100
 
 按照提示输入：
 - 仓库名称（如：`myorg/myproject`）
-- 要监听的事件（`push`、`issues`、`pr`、`release`、`star`、`fork`，多个用逗号分隔）
+- 要监听的事件（`push`、`issues`、`pr`、`release`、`star`、`fork`、`workflow`，多个用逗号分隔）
 - Webhook Secret（可选，发送空格或 skip 跳过）
 
 配置成功后会返回 Webhook URL，例如：

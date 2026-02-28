@@ -1,6 +1,6 @@
 [project]
 name = "ErisPulse-GitHubWebhook"
-version = "1.0.0"
+version = "1.1.0"
 description = "GitHub Webhook 聚合器模块，支持将 GitHub 事件转发到聊天平台"
 readme = "README.md"
 requires-python = ">=3.9"
