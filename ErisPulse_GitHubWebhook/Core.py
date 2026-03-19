@@ -13,7 +13,6 @@ from .utils import (
     generate_uuid_short,
     verify_signature,
     format_timestamp,
-    get_event_key,
 )
 from .templates import GitHubTemplates
 
@@ -74,7 +73,6 @@ class Main(BaseModule):
         defaults = {
             'base_url': '',
             'history_ttl': 7,
-            'dedup_ttl': 3600,
             'error_ratelimit': 300,
             'max_history_records': 100,
         }
@@ -399,6 +397,14 @@ class Main(BaseModule):
                     return {'status': 'error', 'message': 'Invalid signature'}
             
             event_data = json.loads(body.decode('utf-8'))
+            
+            # 验证仓库是否匹配
+            event_repo = event_data.get('repository', {}).get('full_name', '')
+            config_repo = config.get('repo', '')
+            if event_repo and config_repo and event_repo != config_repo:
+                self.logger.warning(f"仓库不匹配: 事件来自 {event_repo}, 但配置是 {config_repo}")
+                return {'status': 'error', 'message': 'Repository mismatch'}
+            
             await self._process_webhook_event(config, event_type, event_data)
             
             return {'status': 'ok'}
@@ -418,15 +424,6 @@ class Main(BaseModule):
                 return
             
             repo = config.get('repo', 'unknown')
-            event_key = get_event_key(repo, event_type, event_data)
-            
-            if event_key:
-                dedup_key = f"github_webhook:dedup:{event_key}"
-                if self.storage.get(dedup_key):
-                    self.logger.debug(f"事件已处理（去重）: {event_key}")
-                    return
-                
-                self.storage.set(dedup_key, True)
             
             await self._save_history(config, event_type, event_data)
             
@@ -505,16 +502,7 @@ class Main(BaseModule):
     
     async def _cleanup_expired_data(self):
         try:
-            current_time = int(time.time())
-            dedup_ttl = self.config.get('dedup_ttl', 3600)
-            
-            dedup_key = f"github_webhook:dedup"
-            dedup_set = self.storage.get(dedup_key, [])
-            dedup_set = [item for item in dedup_set if current_time - item['timestamp'] <= dedup_ttl]
-            self.storage.set(dedup_key, dedup_set)
-            
             self.logger.info("过期数据清理完成")
-            
         except Exception as e:
             self.logger.error(f"清理过期数据失败: {e}")
     

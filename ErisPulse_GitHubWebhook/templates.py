@@ -45,9 +45,11 @@ class GitHubTemplates:
             commits_html += "    </div>\n</details>"
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.PRIMARY_COLOR}; font-size: 16px; font-weight: bold;">GitHub Push</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.PRIMARY_BG}; border-radius: 12px; font-size: 12px; color: {cls.PRIMARY_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.PRIMARY_BG}; border-radius: 6px; margin-bottom: 10px;">
@@ -135,9 +137,11 @@ class GitHubTemplates:
             comments_html = f'<div style="font-size: 12px; margin-top: 8px;"><a href="{comments_url}" style="color: {cls.PRIMARY_COLOR}; text-decoration: none;">查看评论 ({comments}) →</a></div>'
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.PRIMARY_COLOR}; font-size: 16px; font-weight: bold;">GitHub Issue {action_cn}</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.PRIMARY_BG}; border-radius: 12px; font-size: 12px; color: {cls.PRIMARY_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.PRIMARY_BG}; border-radius: 6px; margin-bottom: 10px;">
@@ -245,9 +249,11 @@ class GitHubTemplates:
             comments_html = f'<div style="font-size: 12px; margin-top: 8px;"><a href="{comments_url}" style="color: {cls.PRIMARY_COLOR}; text-decoration: none;">查看评论 ({comments}) →</a></div>'
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.PRIMARY_COLOR}; font-size: 16px; font-weight: bold;">GitHub PR {action_cn}</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.PRIMARY_BG}; border-radius: 12px; font-size: 12px; color: {cls.PRIMARY_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.PRIMARY_BG}; border-radius: 6px; margin-bottom: 10px;">
@@ -367,9 +373,11 @@ class GitHubTemplates:
             assets_html += "    </div>\n</details>"
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.PRIMARY_COLOR}; font-size: 16px; font-weight: bold;">GitHub Release 发布</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.PRIMARY_BG}; border-radius: 12px; font-size: 12px; color: {cls.PRIMARY_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.SUCCESS_BG}; border-radius: 6px; margin-bottom: 10px;">
@@ -451,9 +459,11 @@ class GitHubTemplates:
         stargazers_count = repo.get('stargazers_count', 0)
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.WARNING_COLOR}; font-size: 16px; font-weight: bold;">⭐ GitHub Star</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.WARNING_BG}; border-radius: 12px; font-size: 12px; color: {cls.WARNING_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.WARNING_BG}; border-radius: 6px; margin-bottom: 8px;">
@@ -500,9 +510,11 @@ class GitHubTemplates:
         fork_url = forkee.get('html_url', '')
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {cls.PRIMARY_COLOR}; font-size: 16px; font-weight: bold;">🍴 GitHub Fork</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {cls.PRIMARY_BG}; border-radius: 12px; font-size: 12px; color: {cls.PRIMARY_COLOR}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {cls.PRIMARY_BG}; border-radius: 6px; margin-bottom: 8px;">
@@ -643,9 +655,11 @@ class GitHubTemplates:
             logs_html = f' | <a href="{logs_url}" style="color: {cls.PRIMARY_COLOR}; text-decoration: none;">查看日志 →</a>'
         
         html = f"""<div style="padding: 12px; border-radius: 8px;">
-    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
         <div style="color: {status_color}; font-size: 16px; font-weight: bold;">⚙️ GitHub Workflow</div>
-        <div style="margin-left: auto; font-size: 12px; color: #666;">{repo_name}</div>
+        <a href="https://github.com/{repo_name}" style="padding: 4px 12px; background: {status_bg}; border-radius: 12px; font-size: 12px; color: {status_color}; text-decoration: none;">
+            {repo_name}
+        </a>
     </div>
     
     <div style="padding: 10px; background: {status_bg}; border-radius: 6px; margin-bottom: 8px;">
