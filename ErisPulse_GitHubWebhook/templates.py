@@ -1,5 +1,7 @@
 from typing import Dict, Any
 
+from .utils import markdown_to_html
+
 
 class GitHubTemplates:
     PRIMARY_COLOR = "#1565c0"
@@ -337,14 +339,14 @@ class GitHubTemplates:
         
         body_html = ""
         if body:
-            body_formatted = body.replace('\n', '<br>')
+            body_parsed = markdown_to_html(body)
             body_html = f"""
 <details>
     <summary style="cursor: pointer; font-size: 13px; padding: 4px 8px; background: {cls.PRIMARY_BG}; border-radius: 4px; display: inline-flex; align-items: center;">
         <span>查看版本描述</span>
     </summary>
-    <div style="padding: 8px; margin-top: 6px; background: rgba(0, 0, 0, 0.02); border-radius: 4px; font-size: 13px; line-height: 1.6;">
-        {body_formatted}
+    <div style="padding: 8px; margin-top: 6px; background: rgba(0, 0, 0, 0.02); border-radius: 4px; line-height: 1.6;">
+        {body_parsed}
     </div>
 </details>"""
         
@@ -406,6 +408,10 @@ class GitHubTemplates:
             ""
         ]
         
+        if body:
+            markdown_lines.append(body)
+            markdown_lines.append("")
+        
         if assets:
             markdown_lines.append(f"**下载文件 ({len(assets)} 个):**")
             markdown_lines.append("")
@@ -429,6 +435,10 @@ class GitHubTemplates:
             f"发布者: {sender}",
             ""
         ]
+        
+        if body:
+            text_lines.append(body)
+            text_lines.append("")
         
         if assets:
             text_lines.append(f"下载文件 ({len(assets)} 个):")
