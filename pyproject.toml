@@ -1,6 +1,6 @@
 [project]
 name = "ErisPulse-GitHubWebhook"
-version = "1.2.3"
+version = "1.3.0"
 description = "GitHub Webhook 聚合器模块，支持将 GitHub 事件转发到聊天平台"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -10,6 +10,7 @@ authors = [
 ]
 dependencies = [
     "cryptography>=41.0.0",
+    "segno>=1.6",
 ]
 
 [project.urls]

@@ -15,6 +15,7 @@ from .utils import (
     format_timestamp,
 )
 from .templates import GitHubTemplates
+from .Renderer import CardRenderer
 
 
 EVENT_HANDLERS = {
@@ -41,6 +42,7 @@ class Main(BaseModule):
         self.logger = sdk.logger.get_child("GitHubWebhook")
         self.storage = sdk.storage
         self.config = self._load_config()
+        self.renderer = CardRenderer(sdk, self.logger)
         self.webhook_routes = {}
         self._event_queue = {}
         self._queue_lock = asyncio.Lock()
@@ -78,10 +80,11 @@ class Main(BaseModule):
             "history_ttl": 7,
             "error_ratelimit": 300,
             "max_history_records": 100,
+            "render_card": True,
         }
 
         for key, value in defaults.items():
-            if key not in config or not config[key]:
+            if key not in config or config[key] is None:
                 config[key] = value
 
         return config
@@ -103,6 +106,10 @@ class Main(BaseModule):
         @command("ghw_remove", help="删除 GitHub 仓库监听")
         async def remove_command(event):
             await self._handle_remove_command(event)
+
+        @command("ghw_set", help="配置监听的通知策略与图片渲染")
+        async def set_command(event):
+            await self._handle_set_command(event)
 
         @command("ghw_history", help="查看 Webhook 接收历史")
         async def history_command(event):
@@ -313,6 +320,194 @@ class Main(BaseModule):
             self.logger.error(f"删除命令失败: {e}", exc_info=True)
             await event.reply("删除失败，请稍后重试")
 
+    EVENT_ALIASES = {
+        "pr": "pull_request",
+        "pull_request": "pull_request",
+        "workflow": "workflow_run",
+        "workflow_run": "workflow_run",
+        "issues": "issues",
+        "release": "release",
+        "push": "push",
+        "star": "star",
+        "fork": "fork",
+    }
+
+    def _render_allowed(self, config, platform):
+        if config.get("render") is False:
+            return False
+        if not self.config.get("render_card", True):
+            return False
+        try:
+            supported_methods = sdk.adapter.list_sends(platform)
+            if "Image" not in supported_methods:
+                return False
+        except Exception:
+            adapter = getattr(sdk.adapter, platform, None)
+            if adapter is None or not hasattr(adapter.Send, "Image"):
+                return False
+        return self.renderer.available() is True
+
+    async def _try_send_rendered(self, adapter, config, platform, event_type, event_data, target_type, target_id):
+        if not self._render_allowed(config, platform):
+            return False
+
+        rendered = self.renderer.render(event_type, event_data)
+        if not rendered:
+            return False
+
+        png, link_text = rendered
+        try:
+            await adapter.Send.To(target_type, target_id).Image(png, stream=True)
+        except Exception as e:
+            self.logger.warning(f"渲染卡片发送失败，回退富文本: {e}")
+            return False
+
+        if link_text:
+            try:
+                await adapter.Send.To(target_type, target_id).Text(link_text)
+            except Exception as e:
+                self.logger.warning(f"链接文本发送失败: {e}")
+        return True
+
+    async def _handle_set_command(self, event):
+        try:
+            target_id, _ = self._get_target_info(event)
+            configs = self.storage.get("github_webhook:configs", [])
+            target_configs = [c for c in configs if c.get("target_id") == target_id]
+
+            if not target_configs:
+                await event.reply("当前还没有配置任何 Webhook 监听")
+                return
+
+            msg = f"当前共有 {len(target_configs)} 个监听配置：\n\n"
+            for i, config in enumerate(target_configs, 1):
+                msg += f"{i}. {config.get('repo', 'unknown')}\n"
+
+            msg += "\n请选择要设置的仓库（输入 0 取消）"
+            await event.reply(msg)
+
+            reply = await event.wait_reply(timeout=60)
+            if not reply:
+                await event.reply("操作超时")
+                return
+
+            try:
+                index = int(reply.get_text().strip())
+                if index == 0:
+                    await event.reply("已取消操作")
+                    return
+                if index < 1 or index > len(target_configs):
+                    await event.reply("无效的序号")
+                    return
+            except ValueError:
+                await event.reply("请输入有效的序号")
+                return
+
+            config = target_configs[index - 1]
+
+            render_state = {True: "开", False: "关", None: "跟随全局"}.get(config.get("render"), "跟随全局")
+            notify = config.get("notify") or {}
+            if notify:
+                policy_lines = []
+                for event_name, actions in notify.items():
+                    policy_lines.append(f"  {event_name}: 仅 {'、'.join(actions)}" if actions else f"  {event_name}: 已静音")
+                policy = "仅以下动作：\n" + "\n".join(policy_lines)
+            else:
+                policy = "全部动作"
+
+            subscribed = "、".join(config.get("events", []))
+            await event.reply(
+                f"{config.get('repo', 'unknown')} 当前设置：\n\n"
+                f"图片渲染: {render_state}\n"
+                f"通知策略: {policy}\n"
+                f"监听事件: {subscribed}\n\n"
+                "请输入要修改的项（输入 0 取消）：\n"
+                "- render on|off|auto —— 图片渲染 开/关/跟随全局\n"
+                "- <事件> <动作...> —— 设置通知白名单，如 workflow failure、issues opened,closed\n"
+                "- <事件> all —— 恢复该事件全部通知\n"
+                "- <事件> mute —— 静音该事件\n"
+                "- clear —— 清空通知策略（恢复全部通知）"
+            )
+
+            change_reply = await event.wait_reply(timeout=90)
+            if not change_reply:
+                await event.reply("操作超时")
+                return
+
+            change = change_reply.get_text().strip()
+            if not change or change == "0":
+                await event.reply("已取消操作")
+                return
+
+            error = self._apply_setting(config, change)
+            if error:
+                await event.reply(error)
+                return
+
+            all_configs = self.storage.get("github_webhook:configs", [])
+            all_configs = [
+                {**c, "render": config.get("render"), "notify": config.get("notify")}
+                if c.get("uuid") == config.get("uuid")
+                else c
+                for c in all_configs
+            ]
+            self.storage.set("github_webhook:configs", all_configs)
+
+            render_state = {True: "开", False: "关", None: "跟随全局"}.get(config.get("render"), "跟随全局")
+            await event.reply(f"设置已保存。图片渲染: {render_state}")
+            self.logger.info(f"更新监听设置: {config.get('repo')}")
+
+        except Exception as e:
+            self.logger.error(f"设置命令失败: {e}", exc_info=True)
+            await event.reply("设置失败，请稍后重试")
+
+    def _apply_setting(self, config, change):
+        lowered = change.lower()
+        if lowered == "clear":
+            config.pop("notify", None)
+            return None
+
+        parts = change.split()
+        if parts[0].lower() == "render":
+            if len(parts) != 2 or parts[1].lower() not in ("on", "off", "auto"):
+                return "格式错误，应为 render on|off|auto"
+            state = {"on": True, "off": False, "auto": None}[parts[1].lower()]
+            if state is None:
+                config.pop("render", None)
+            else:
+                config["render"] = state
+            return None
+
+        event_name = self.EVENT_ALIASES.get(parts[0].lower())
+        if event_name is None:
+            return f"未知事件: {parts[0]}，可用事件 push/issues/pr/release/star/fork/workflow"
+        if event_name not in config.get("events", []):
+            return f"{event_name} 不在该监听的事件列表中"
+
+        if len(parts) == 1 or parts[1].lower() == "all":
+            notify = config.get("notify") or {}
+            notify.pop(event_name, None)
+            if notify:
+                config["notify"] = notify
+            else:
+                config.pop("notify", None)
+            return None
+
+        if len(parts) == 2 and parts[1].lower() == "mute":
+            notify = config.get("notify") or {}
+            notify[event_name] = []
+            config["notify"] = notify
+            return None
+
+        actions = [a.strip().lower() for a in parts[1].split(",") if a.strip()]
+        if len(parts) > 2 or not actions:
+            return "格式错误，应为 <事件> <动作...>，动作多个用逗号分隔"
+
+        notify = config.get("notify") or {}
+        notify[event_name] = actions
+        config["notify"] = notify
+        return None
+
     async def _handle_history_command(self, event):
         try:
             target_id, _ = self._get_target_info(event)
@@ -440,6 +635,16 @@ class Main(BaseModule):
             events = config.get("events", [])
             if event_type not in events:
                 return
+
+            notify = config.get("notify") or {}
+            allowed = notify.get(event_type)
+            if allowed is not None:
+                action = event_data.get("action", "")
+                conclusion = ""
+                if event_type == "workflow_run":
+                    conclusion = event_data.get("workflow_run", {}).get("conclusion", "")
+                if action not in allowed and conclusion not in allowed:
+                    return
 
             repo = config.get("repo", "unknown")
             target_id = config.get("target_id")
@@ -617,8 +822,6 @@ class Main(BaseModule):
 
     async def _send_single_event(self, config, event_type, event_data, repo):
         try:
-            message_templates = format_message(event_type, event_data)
-
             platform = config.get("platform")
             target_id = config.get("target_id")
             target_type = config.get("target_type")
@@ -627,6 +830,14 @@ class Main(BaseModule):
             if not adapter:
                 self.logger.error(f"未找到适配器: {platform}")
                 return
+
+            if await self._try_send_rendered(
+                adapter, config, platform, event_type, event_data, target_type, target_id
+            ):
+                self.logger.info(f"发送 {event_type} 事件渲染卡片: {repo}")
+                return
+
+            message_templates = format_message(event_type, event_data)
 
             format_name, content = self._select_best_format(platform, message_templates)
             await self._send_with_format(
