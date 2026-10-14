@@ -33,6 +33,9 @@ body { font-family: "Roboto", "Noto Sans SC", sans-serif; }
 .body .p-li { margin: 8px 0; padding-left: 36px; text-indent: -36px; }
 .body .p-li2 { margin: 7px 0; padding-left: 72px; text-indent: -36px;
   font-size: 27px; color: #000000; }
+.body .cb { display: inline-block; width: 24px; height: 24px; border: 3px solid #000000;
+  margin-right: 16px; vertical-align: -1px; }
+.body .cb-done { background: #000000; }
 .body .p-code { font-family: "Source Code Pro", monospace; font-size: 25px; }
 .body .p-pre { font-family: "Source Code Pro", monospace; font-size: 23px; line-height: 1.55;
   border: 2px solid #000000; padding: 18px 22px; margin: 16px 0; }
@@ -55,6 +58,11 @@ body { font-family: "Roboto", "Noto Sans SC", sans-serif; }
   padding-top: 20px; }
 .tags .t-muted { color: #6b7280; font-weight: 400; letter-spacing: 0; }
 """
+
+
+_HTML_COMMENT = re.compile(r"<!--.*?-->", re.DOTALL)
+_HTML_COMMENT_OPEN = re.compile(r"<!--.*$", re.DOTALL)
+_TASK_ITEM = re.compile(r"^\[([ xX])\]\s+(.*)$")
 
 
 def _esc(text):
@@ -103,6 +111,8 @@ def _inline(text):
 
 
 def _body_md(md_text, prefix=""):
+    md_text = _HTML_COMMENT.sub("", md_text)
+    md_text = _HTML_COMMENT_OPEN.sub("", md_text)
     source, truncated = _fit_text(md_text)
     parts = [prefix] if prefix else []
     in_code = False
@@ -132,6 +142,13 @@ def _body_md(md_text, prefix=""):
             continue
         list_match = re.match(r"^(\s*)-\s+(.*)$", line)
         if list_match:
+            content = list_match.group(2)
+            task = _TASK_ITEM.match(content)
+            if task:
+                box = '<span class="cb cb-done"></span>' if task.group(1).lower() == "x" else '<span class="cb"></span>'
+                cls = "p-li2" if list_match.group(1) else "p-li"
+                parts.append(f'<div class="{cls}">{box}{_inline(task.group(2))}</div>')
+                continue
             dash = "–&nbsp; "
             if list_match.group(1):
                 parts.append(f'<div class="p-li2">{dash}{_inline(list_match.group(2))}</div>')
