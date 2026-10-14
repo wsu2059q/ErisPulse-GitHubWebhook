@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import html
 import re
 import uuid
 from datetime import datetime
@@ -76,6 +77,7 @@ def _inline_md_to_html(text):
 def markdown_to_html(md_text):
     if not md_text:
         return ""
+    md_text = html.escape(md_text)
     lines = md_text.split('\n')
     html_parts = []
     in_list = False
@@ -93,7 +95,10 @@ def markdown_to_html(md_text):
                     html_parts.append('</ul>')
                     in_list = False
                 lang = stripped[3:].strip()
-                html_parts.append(f'<pre><code{f" class={lang}" if lang else ""}>')
+                if lang:
+                    html_parts.append(f'<pre><code class="{lang}">')
+                else:
+                    html_parts.append('<pre><code>')
                 in_code_block = True
             continue
 
@@ -120,11 +125,11 @@ def markdown_to_html(md_text):
             html_parts.append(f'<div style="font-size: {size}; font-weight: bold; margin: 8px 0 4px;">{content}</div>')
             continue
 
-        if stripped.startswith('>'):
+        if stripped.startswith('&gt;') or stripped.startswith('>'):
             if in_list:
                 html_parts.append('</ul>')
                 in_list = False
-            quote_content = re.sub(r'^>\s*', '', stripped)
+            quote_content = re.sub(r'^(?:&gt;|>)\s*', '', stripped)
             html_parts.append(f'<div style="border-left: 3px solid #1565c0; padding: 4px 8px; margin: 4px 0; color: #555; font-size: 13px;">{_inline_md_to_html(quote_content)}</div>')
             continue
 
